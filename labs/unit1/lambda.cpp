@@ -29,27 +29,28 @@ int main (int argc, char **argv)
     cout << "5 + 10 = " << x << endl;
 
     // Change values of a and b
-    a = 20;
+    a = 10;
     b = 30;
     // Call the fixed function again
     x = add_fixed();
     // Display the answer - will come out as 15
-    cout << "20 + 30 = " << x << endl;
+    cout << a << " + "<< b << " = " << x << endl;
+    cout << "!! as shown, above expression is wrong !!" << endl;
 
     // Define the values passed to the function , but pass as reference
     auto add_reference = [&a, &b] { return a + b; };
     // Call the function
     x = add_reference();
     // Display the answer - should be 50
-    cout << "20 + 30 = " << x << endl;
+    cout << a << " + " << b << " = " << x << endl;
 
     // Change the values of a and b
-    a = 30;
+    a = 31;
     b = 5;
     // Call the reference based function again
     x = add_reference();
     // Display the answer - should be 35
-    cout << "30 + 5 = " << x << endl;
+    cout << a << " + " << b << " = " << x << endl;
 
     return 0;
 }
