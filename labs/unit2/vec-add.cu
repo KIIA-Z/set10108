@@ -5,9 +5,13 @@
 
 #include "gpuErrchk.h"
 
+#define N 512
+
 using namespace std;
 
 constexpr size_t ELEMENTS = 2048;
+
+
 
 __global__ void vecadd(const int *A, const int *B, int *C)
 {
@@ -22,6 +26,10 @@ __global__ void vecadd(const int *A, const int *B, int *C)
 	// Add corresponding locations of A and B and store in C
 	C[idx] = A[idx] + B[idx];
 }
+
+
+
+
 
 int main(int argc, char **argv)
 {

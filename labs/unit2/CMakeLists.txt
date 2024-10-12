@@ -2,10 +2,12 @@ project(set10108-unit2 LANGUAGES CXX CUDA)
 cmake_minimum_required(VERSION 3.17)
 set(CMAKE_CXX_STANDARD 17)
 include_directories(../contrib)
- 
+
 add_executable(hello-cuda hello.cu)
 set_property(TARGET hello-cuda PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_executable(info-cuda info.cu)
 set_property(TARGET info-cuda PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 add_executable(vec-add-cuda vec-add.cu)
+set_property(TARGET info-cuda PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+add_executable(Matrix-Multiply-cuda Matrix-Multiply.cu)
 set_property(TARGET info-cuda PROPERTY CUDA_SEPARABLE_COMPILATION ON)
