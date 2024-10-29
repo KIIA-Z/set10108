@@ -82,61 +82,79 @@ int calc_token_occurrences(const std::vector<char>& data, const char* token)
     return numOccurrences;
 }
 
-const char* kernelSource = R"(
-__kernel void calcTokenOccurrences(
-    __global const char* data,
-    __global int* results,
-    __global const char* tokens,
-    __global const int* tokenOffsets,
-    __global const int* tokenLengths,
-    const int dataSize,
-    const int numTokens) {
-    int id = get_global_id(0);
-    if (id >= dataSize) return;
-    for (int t = 0; t < numTokens; ++t) {
-        int tokenLen = tokenLengths[t];
-        int tokenIdx = tokenOffsets[t];
-        // Test 1: does this match the token?
-        int match = 1;
-        for (int i = 0; i < tokenLen; ++i) {
-            if (id + i >= dataSize || data[id + i] != tokens[tokenIdx + i]) {
-                match = 0;
-                break;
-            }
-        }
-        if (!match) continue;
-        // Test 2: is the prefix a non-letter character?
-        int iPrefix = id - 1;
-        if (iPrefix >= 0 && data[iPrefix] >= 'a' && data[iPrefix] <= 'z') continue;
-        // Test 3: is the suffix a non-letter character?
-        int iSuffix = id + tokenLen;
-        if (iSuffix < dataSize && data[iSuffix] >= 'a' && data[iSuffix] <= 'z') continue;
-        // Increment occurrence counter for this token
-        atomic_inc(&results[t]);
-    }
-})";
-
 int main() {
     //const char * filepath = "dataset/shakespeare.txt";
+
+    //initilise timers at zero for cpu and gpu runtime testing
     uint64_t total_ns_GPU = 0;
     uint64_t total_ns_CPU = 0;
+
+    int user_choice;
+    std::vector<char> data;
+    int exit = 0;
+
+    //std::cout << std::filesystem::current_path() << std::endl;
+    
+    // a switch case surrounded by a do whoile loop that allows the user to chose which file to read to file
+    std::cout << "1 for Beowulf" << std::endl;
+    std::cout << "2 for Crime and Punishment" << std::endl;
+    std::cout << "3 for Edgar Allan Poe" << std::endl;
+    std::cout << "4 for Pride and Prejudice." << std::endl;
+    std::cout << "5 for Shakespeare" << std::endl;
+    std::cout << "Please enter a number between 1-5: ";
+    do {
+        std::cin >> user_choice;
+        switch (user_choice) {
+        case 1:
+            data = read_file("dataset/beowulf.txt");
+            cout << "beowulf.txt file has been read!" << endl;
+            cout << " " << endl;
+            exit = 1;
+            break;
+        case 2:
+            data = read_file("dataset/crime_and_punishment.txt");
+            cout << "crime_and_punishment.txt file has been read!" << endl;
+            cout << " " << endl;
+            exit = 1;
+            break;
+        case 3:
+            data = read_file("dataset/edgar_allan_poe.txt");
+            cout << "edgar_allan_poe.txt file has been read!" << endl;
+            cout << " " << endl;
+            exit = 1;
+            break;
+        case 4:
+            data = read_file("dataset/pride_and_prejudice.txt");
+            cout << "pride_and_prejudice.txt file has been read!" << endl;
+            cout << " " << endl;
+            exit = 1;
+            break;
+        case 5:
+            data = read_file("dataset/shakespeare.txt");
+            cout << "shakespeare.txt file has been read!" << endl;
+            cout << " " << endl;
+                exit = 1;
+            break;
+        default:
+            cout << "please only enter a number between 1-5: " << endl;
+            cout << " " << endl;
+
+        }
+    } while (exit != 1);
     
     //-------------------CPU/Original code Area---------------------------------------------
     
-    std::vector<char> data = read_file("C:/Users/kia/source/repos/set10108/labs/cw1/dataset/shakespeare.txt");
 
     const char* words[] = { "sword", "fire", "death", "love", "hate", "the", "man", "woman" };
     int numTokens = sizeof(words) / sizeof(words[0]);
 
     //clock for timing gpu 
     auto startCPU = system_clock::now();
-    
-   
 
     for (const char* word : words)
     {
         int occurrences = calc_token_occurrences(data, word);
-        std::cout << "Found " << occurrences << " occurrences of word: " << word << std::endl;
+        std::cout << "Number of occurrences of \"" << word << "\": " << occurrences << std::endl;
     }
     auto endCPU = system_clock::now();
 
@@ -145,7 +163,7 @@ int main() {
 
     cout << "CPU total: " << total_ns_CPU << "ns (nano-seconds)" << endl;
 
-    //-------------------GPU/CL code Area---------------------------------------------
+    //-------------------GPU/OpenCL code Area---------------------------------------------
 
     // Calculate the total length and offsets of all tokens
     int totalTokenLen = 0;
@@ -195,12 +213,7 @@ int main() {
 
 
     // Copy data to the GPU
-
-    cl_int err0;
-    err0 = queue.enqueueWriteBuffer(buf_data, CL_TRUE, 0, data.size() * sizeof(char), data.data());
-    if (err0 != CL_SUCCESS) {
-        std::cerr << "Error writing buffer data: " << err0 << std::endl;
-    }
+    queue.enqueueWriteBuffer(buf_data, CL_TRUE, 0, data.size() * sizeof(char), data.data());
     queue.enqueueWriteBuffer(buf_results, CL_TRUE, 0, results.size() * sizeof(int), results.data());
     queue.enqueueWriteBuffer(buf_tokens, CL_TRUE, 0, tokens.size() * sizeof(char), tokens.data());
     queue.enqueueWriteBuffer(buf_tokenOffsets, CL_TRUE, 0, tokenOffsets.size() * sizeof(int), tokenOffsets.data());
@@ -259,8 +272,8 @@ int main() {
     //set gobal and local work sizes to caculated values
     NDRange global(globalSize);
     NDRange local(localSize);
+
     // Execute kernel
-    
     queue.enqueueNDRangeKernel(calc_token_occurrences_kernel, NullRange, global, local);
     queue.finish();
 
@@ -285,12 +298,12 @@ catch (Error error)
 }
     
     // Clean up memory storage etc
-    //clReleaseMemObject(d_data);
-    //clReleaseMemObject(d_results);
-    //clReleaseMemObject(d_tokens);
-    //clReleaseMemObject(d_tokenOffsets);
-    //clReleaseMemObject(d_tokenLengths);
-    //clReleaseKernel(kernel);
+    //clReleaseMemObject(buf_data);
+    //clReleaseMemObject(buf_results);
+    //clReleaseMemObject(buf_tokens);
+    //clReleaseMemObject(buf_tokenOffsets);
+    //clReleaseMemObject(buf_tokenLength);
+    //clReleaseKernel(calc_token_occurrences_kernel);
     //clReleaseProgram(program);
     //clReleaseCommandQueue(queue);
     //clReleaseContext(context);
