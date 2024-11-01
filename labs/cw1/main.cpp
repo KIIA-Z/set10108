@@ -13,11 +13,6 @@ using namespace std;
 using namespace cl;
 using namespace std::chrono;
 
-constexpr int ELEMENTS = 5096;
-//constexpr int ELEMENTS = 2048;
-//constexpr int ELEMENTS = 1024;
-constexpr std::size_t DATA_SIZE = sizeof(int) * ELEMENTS;
-
 std::vector<char> read_file(const char* filename)
 {
     // Open the file in binary mode
@@ -83,19 +78,17 @@ int calc_token_occurrences(const std::vector<char>& data, const char* token)
 }
 
 int main() {
-    //const char * filepath = "dataset/shakespeare.txt";
-
-    //initilise timers at zero for cpu and gpu runtime testing
+    // Initilise timers at zero for cpu and gpu runtime testing
     uint64_t total_ns_GPU = 0;
     uint64_t total_ns_CPU = 0;
 
+    ofstream CPUdata("CPUdata.csv", ofstream::out);
+    ofstream GPUdata("GPUdata.csv", ofstream::out);
     int user_choice;
     std::vector<char> data;
     int exit = 0;
-
-    //std::cout << std::filesystem::current_path() << std::endl;
     
-    // a switch case surrounded by a do whoile loop that allows the user to chose which file to read to file
+    // A switch case surrounded by a do whoile loop that allows the user to chose which file to read from
     std::cout << "1 for Beowulf" << std::endl;
     std::cout << "2 for Crime and Punishment" << std::endl;
     std::cout << "3 for Edgar Allan Poe" << std::endl;
@@ -145,10 +138,10 @@ int main() {
     //-------------------CPU/Original code Area---------------------------------------------
     
 
-    const char* words[] = { "sword", "fire", "death", "love", "hate", "the", "man", "woman" };
+    const char* words[] = { "sword", "fire", "death", "love", "hate", "but", "man", "woman", "the"};
     int numTokens = sizeof(words) / sizeof(words[0]);
 
-    //clock for timing gpu 
+    // Clock for timing CPU 
     auto startCPU = system_clock::now();
 
     for (const char* word : words)
@@ -157,11 +150,13 @@ int main() {
         std::cout << "Number of occurrences of \"" << word << "\": " << occurrences << std::endl;
     }
     auto endCPU = system_clock::now();
-
     auto total = endCPU - startCPU;
     total_ns_CPU += total.count();
 
-    cout << "CPU total: " << total_ns_CPU << "ns (nano-seconds)" << endl;
+    // Writes CPU time to file
+    CPUdata << total.count() << endl;
+
+    cout << "CPU total: " << total_ns_CPU << " ns (nano-seconds)" << endl;
 
     //-------------------GPU/OpenCL code Area---------------------------------------------
 
@@ -174,14 +169,14 @@ int main() {
         tokenLengths[i] = strlen(words[i]);
         totalTokenLen += tokenLengths[i];
     }
-    // Flatten the tokens array into a single buffer
+
+    // Flatten the tokens array so they can be put into a single buffer
     std::vector<char> tokens;
     for (int i = 0; i < numTokens; ++i) {
         tokens.insert(tokens.end(), words[i], words[i] + tokenLengths[i]);
     }
 
-    // Read the data from a file
-    //std::vector<char> data = read_file("C:/Users/kia/source/repos/set10108/labs/cw1/dataset/shakespeare.txt");
+    // Sets the size of the data to be passed into the kernel
     int dataSize = data.size();
     // Initialize result
     std::vector<int> results(numTokens, 0); // One result per token
@@ -227,7 +222,7 @@ int main() {
     Program::Sources source{ code };
     Program program(context, source);
     
-    // Build program for devices 
+    // Build program for devices with an if statment afterwards for debugging purposes
     cl_int buildErr = program.build(devices);
     if (buildErr != CL_SUCCESS) {
         std::string buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]);
@@ -238,7 +233,7 @@ int main() {
     // Create the kernel
     Kernel calc_token_occurrences_kernel(program, "calcTokenOccurrences");
 
-    // Set kernel arguments
+    // Set the kernels arguments
     calc_token_occurrences_kernel.setArg(0, buf_data);
     calc_token_occurrences_kernel.setArg(1, buf_results);
     calc_token_occurrences_kernel.setArg(2, buf_tokens);
@@ -247,15 +242,14 @@ int main() {
     calc_token_occurrences_kernel.setArg(5, dataSize);
     calc_token_occurrences_kernel.setArg(6, numTokens);
 
-
-    //test that shows the max work size for gpu (debug stuff)
+    // Test that shows the max work size for gpu (debug and testing stuff)
     size_t maxWorkGroupSize;
     devices[0].getInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE, &maxWorkGroupSize);
     std::cout << "Max work group size: " << maxWorkGroupSize << std::endl;
 
-    //calulates value for local size using the devices max work size 
+    // Calulates value for local size using the devices max work size 
     size_t globalSize = dataSize;
-    size_t localSize = (dataSize / (1024));
+    size_t localSize = (dataSize / (maxWorkGroupSize));
     if (localSize > maxWorkGroupSize) {
         localSize = maxWorkGroupSize;  // Adjust to fit within the limit
     }
@@ -266,47 +260,40 @@ int main() {
 
     std::cout << "WorkGroupSize: " << dataSize << std::endl;
 
-    //start GPU timer
+    // start GPU timer
     auto startGPU = system_clock::now();
     
-    //set gobal and local work sizes to caculated values
+    // Set gobal and local work sizes to caculated values
     NDRange global(globalSize);
     NDRange local(localSize);
 
     // Execute kernel
     queue.enqueueNDRangeKernel(calc_token_occurrences_kernel, NullRange, global, local);
-    queue.finish();
 
     // Copy result back
     queue.enqueueReadBuffer(buf_results, CL_TRUE, 0, results.size() * sizeof(int), results.data());
+    queue.finish();
+    
+    // End and calculate GPU timer
+    auto endGPU = system_clock::now();
+    auto total_gpu = endGPU - startGPU;
+    total_ns_GPU += total_gpu.count();
 
-     for (int i = 0; i < numTokens; ++i) {
+    // Writes gpu time to file
+    GPUdata << total_gpu.count() << endl;
+    
+    // Prints out all results for GPU algorithm 
+    for (int i = 0; i < numTokens; ++i) {
         std::cout << "Number of occurrences of \"" << words[i] << "\": " << results[i] << std::endl;
     }
 
-     //end and calculate GPU timer
-     auto endGPU = system_clock::now();
-     auto total_gpu = endGPU - startGPU;
-     total_ns_GPU += total_gpu.count();
-
      // Output the number of occurrences for each token
-     cout << "GPU total: " << total_ns_GPU << "ns (nano-seconds)" << endl;
+     cout << "GPU total: " << total_ns_GPU << " ns (nano-seconds)" << endl;
 }
 catch (Error error)
 {
+    // Prints out any errors or warning for debugging purposes
     cout << error.what() << "(" << error.err() << ")" << endl;
 }
-    
-    // Clean up memory storage etc
-    //clReleaseMemObject(buf_data);
-    //clReleaseMemObject(buf_results);
-    //clReleaseMemObject(buf_tokens);
-    //clReleaseMemObject(buf_tokenOffsets);
-    //clReleaseMemObject(buf_tokenLength);
-    //clReleaseKernel(calc_token_occurrences_kernel);
-    //clReleaseProgram(program);
-    //clReleaseCommandQueue(queue);
-    //clReleaseContext(context);
-   
     return 0;
 }
