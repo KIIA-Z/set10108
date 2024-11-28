@@ -1,0 +1,3 @@
+C:/Users/kia/source/repos/set10108/labs/cw_build/CMakeFiles/cw1.dir
+C:/Users/kia/source/repos/set10108/labs/cw_build/CMakeFiles/ALL_BUILD.dir
+C:/Users/kia/source/repos/set10108/labs/cw_build/CMakeFiles/ZERO_CHECK.dir

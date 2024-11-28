@@ -1,0 +1,15 @@
+﻿  Building Custom Rule C:/Users/kia/source/repos/set10108/labs/cw1/CMakeLists.txt
+  main.cpp
+  cl_version.h: CL_TARGET_OPENCL_VERSION is not defined. Defaulting to 300 (OpenCL 3.0)
+  opencl.hpp: __CL_ENABLE_EXCEPTIONS is deprecated. Define CL_HPP_ENABLE_EXCEPTIONS instead
+  opencl.hpp: CL_HPP_TARGET_OPENCL_VERSION is not defined. It will default to 300 (OpenCL 3.0)
+C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include\CL\cl.hpp(6856,15): warning C4996: 'clSetProgramReleaseCallback': was declared deprecated
+  (compiling source file '../cw1/main.cpp')
+  
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(169,33): warning C4267: '=': conversion from 'size_t' to '_Ty', possible loss of data
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(169,33): warning C4267:         with
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(169,33): warning C4267:         [
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(169,33): warning C4267:             _Ty=cl_int
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(169,33): warning C4267:         ]
+C:\Users\kia\source\repos\set10108\labs\cw1\main.cpp(180,18): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  cw1.vcxproj -> C:\Users\kia\source\repos\set10108\labs\cw_build\Release\cw1.exe

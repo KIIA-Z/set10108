@@ -25,11 +25,11 @@ int main(int argc, char **argv)
     try
     {
         // Get the platforms
-        vector<Platform> platforms;
+        std::vector<Platform> platforms;
         Platform::get(&platforms);
 
         // Assume only one platform.  Get GPU devices.
-        vector<Device> devices;
+        std::vector<Device> devices;
         platforms[0].getDevices(CL_DEVICE_TYPE_GPU, &devices);
 
         // Just to test, print out device 0 name
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
         string code(istreambuf_iterator<char>(file), (istreambuf_iterator<char>()));
         
         // Create program
-        Program::Sources source(1, make_pair(code.c_str(), code.length() + 1));
+        Program::Sources source{ code };
         Program program(context, source);
 
         // Build program for devices
